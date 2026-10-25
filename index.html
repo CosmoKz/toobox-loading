@@ -12,12 +12,9 @@
     background-color: #1e1e21;
     background-image: linear-gradient(#3e3e46 1px, transparent 1px), linear-gradient(90deg, #3e3e46 1px, transparent 1px);
     background-image: -webkit-linear-gradient(#3e3e46 1px, transparent 1px), -webkit-linear-gradient(0deg, #3e3e46 1px, transparent 1px);
-    background-size: 48px 48px;
-    -webkit-animation: drift 55s linear infinite; animation: drift 55s linear infinite;
+    background-size: 48px 48px; /* still: the drift stuttered in GMod's browser while it loads */
     font-family: "Segoe UI", Tahoma, sans-serif; color: #dcdcdc;
   }
-  @-webkit-keyframes drift { to { background-position: 576px 336px; } }
-  @keyframes drift { to { background-position: 576px 336px; } }
   /* soft vignette so the centre reads */
   .shade { position: absolute; left: 0; top: 0; right: 0; bottom: 0;
     background: -webkit-radial-gradient(center, ellipse, rgba(30,30,33,0) 30%, rgba(20,20,23,.85) 100%);
@@ -63,7 +60,7 @@
   .tip .label { display: block; margin-bottom: 6px; }
   #tip { -webkit-transition: opacity .4s; transition: opacity .4s; }
 
-  @media (prefers-reduced-motion: reduce) { body, .lockup img, .card { -webkit-animation: none; animation: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .lockup img, .card { -webkit-animation: none; animation: none; opacity: 1; } }
 </style>
 </head>
 <body>
