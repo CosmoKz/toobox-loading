@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TooBox RP</title>
+<!-- TooBox loading screen (sv_loadingurl). GMod calls GameDetails / SetFilesTotal / SetFilesNeeded /
+     DownloadingFile / SetStatusChanged while you join. Old clients render this in an old WebKit, so: ES5,
+     prefixed animations, no flex gap. Design: docs/brand/DESIGN.md. -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    background-color: #1e1e21;
+    background-image: linear-gradient(#3e3e46 1px, transparent 1px), linear-gradient(90deg, #3e3e46 1px, transparent 1px);
+    background-image: -webkit-linear-gradient(#3e3e46 1px, transparent 1px), -webkit-linear-gradient(0deg, #3e3e46 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-animation: drift 55s linear infinite; animation: drift 55s linear infinite;
+    font-family: "Segoe UI", Tahoma, sans-serif; color: #dcdcdc;
+  }
+  @-webkit-keyframes drift { to { background-position: 576px 336px; } }
+  @keyframes drift { to { background-position: 576px 336px; } }
+  /* soft vignette so the centre reads */
+  .shade { position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+    background: -webkit-radial-gradient(center, ellipse, rgba(30,30,33,0) 30%, rgba(20,20,23,.85) 100%);
+    background: radial-gradient(ellipse at center, rgba(30,30,33,0) 30%, rgba(20,20,23,.85) 100%); }
+
+  .wrap { position: absolute; left: 50%; top: 50%; width: 760px; margin-left: -380px; -webkit-transform: translateY(-55%); transform: translateY(-55%); text-align: center; }
+
+  .lockup { display: inline-block; }
+  .lockup img { width: 96px; height: 96px; vertical-align: middle;
+    -webkit-animation: breathe 1s ease-in-out infinite alternate; animation: breathe 1s ease-in-out infinite alternate; }
+  .lockup span { font-size: 64px; font-weight: 700; vertical-align: middle; margin-left: 18px; letter-spacing: -.01em; }
+  @-webkit-keyframes breathe { from { opacity: .55; -webkit-transform: scale(.94); } to { opacity: 1; -webkit-transform: scale(1); } }
+  @keyframes breathe { from { opacity: .55; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+
+  .server { margin-top: 14px; font-size: 18px; color: #9696a0; }
+  .server b { color: #dcdcdc; font-weight: 600; }
+
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #9696a0; }
+
+  .load { margin: 44px auto 0; width: 560px; text-align: left; }
+  .row { overflow: hidden; margin-bottom: 8px; }
+  .row .label { float: left; }
+  .row .pct { float: right; font-size: 13px; color: #dcdcdc; font-weight: 600; }
+  .bar { height: 8px; background: #26262c; position: relative; overflow: hidden; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #2878e6;
+    box-shadow: 0 0 12px rgba(59,140,255,.55); -webkit-transition: width .4s ease-out; transition: width .4s ease-out; }
+  .file { margin-top: 8px; font-size: 13px; color: #9696a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; height: 18px; }
+
+  .cards { margin: 46px auto 0; width: 760px; font-size: 0; }
+  .card { display: inline-block; vertical-align: top; width: 175px; margin: 0 5px; padding: 16px 14px; box-sizing: border-box;
+    background: rgba(38,38,44,.92); text-align: left; font-size: 13px;
+    opacity: 0; -webkit-animation: rise .5s cubic-bezier(.2,1.2,.4,1) forwards; animation: rise .5s cubic-bezier(.2,1.2,.4,1) forwards; }
+  .card:nth-child(2) { -webkit-animation-delay: .1s; animation-delay: .1s; }
+  .card:nth-child(3) { -webkit-animation-delay: .2s; animation-delay: .2s; }
+  .card:nth-child(4) { -webkit-animation-delay: .3s; animation-delay: .3s; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; color: #dcdcdc; }
+  .card h3 i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3b8cff; box-shadow: 0 0 6px #3b8cff; margin-right: 8px; vertical-align: 2px; }
+  .card p { margin: 0; color: #9696a0; line-height: 1.45; }
+  @-webkit-keyframes rise { from { opacity: 0; -webkit-transform: translateY(14px); } to { opacity: 1; -webkit-transform: translateY(0); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  .tip { position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; font-size: 15px; color: #dcdcdc; }
+  .tip .label { display: block; margin-bottom: 6px; }
+  #tip { -webkit-transition: opacity .4s; transition: opacity .4s; }
+
+  @media (prefers-reduced-motion: reduce) { body, .lockup img, .card { -webkit-animation: none; animation: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="shade"></div>
+
+<div class="wrap">
+  <div class="lockup"><img src="icon.png" alt=""><span>TooBox</span></div>
+  <div class="server" id="server">Joining <b>TooBox RP</b></div>
+
+  <div class="load">
+    <div class="row"><span class="label" id="status">Connecting</span><span class="pct" id="pct"></span></div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="file" id="file"></div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h3><i></i>Gangs</h3><p>Start a crew, capture flags for turf and bank the payouts.</p></div>
+    <div class="card"><h3><i></i>Grow Op</h3><p>Grow five strains, dry the buds and find the buyer.</p></div>
+    <div class="card"><h3><i></i>Casino</h3><p>Roulette, blackjack, slots, crash. Or run the house.</p></div>
+    <div class="card"><h3><i></i>Crates</h3><p>Spin the daily wheel at spawn and unbox rare skins.</p></div>
+  </div>
+</div>
+
+<div class="tip"><span class="label">Tip</span><span id="tip"></span></div>
+
+<script>
+  var tips = [
+    "Press F4 to pick a job, buy printers and grab gear.",
+    "Type !gang to start or join a gang.",
+    "The daily wheel at spawn gives a free crate every day.",
+    "Glitched and Galactic guns come with animated skins.",
+    "Type !title to buy floating text over your head.",
+    "Cops get alerted when a gang starts capturing a flag.",
+    "Water your plants and keep them under a lamp.",
+    "Type !rules to read the server rules."
+  ];
+  var tipIndex = Math.floor(Math.random() * tips.length);
+  function el(id) { return document.getElementById(id); }
+  function showTip() {
+    var t = el("tip");
+    t.style.opacity = 0;
+    setTimeout(function () { t.innerHTML = tips[tipIndex]; tipIndex = (tipIndex + 1) % tips.length; t.style.opacity = 1; }, 400);
+  }
+  showTip();
+  setInterval(showTip, 6000);
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  var total = 0, needed = 0;
+  function progress() {
+    if (total <= 0) return;
+    var p = Math.max(0, Math.min(1, (total - needed) / total));
+    el("fill").style.width = (p * 100) + "%";
+    el("pct").innerHTML = Math.round(p * 100) + "%";
+  }
+
+  // Called by GMod.
+  function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode) {
+    el("server").innerHTML = "Joining <b>" + esc(servername) + "</b> &middot; " + esc(mapname);
+  }
+  function SetFilesTotal(t) { total = t; progress(); }
+  function SetFilesNeeded(n) { needed = n; progress(); }
+  function DownloadingFile(name) { el("file").innerHTML = esc(name); }
+  function SetStatusChanged(status) {
+    el("status").innerHTML = esc(status.replace(/\.+$/, ""));
+    if (/Sending client info|Client info sent|Starting Lua/i.test(status)) { el("fill").style.width = "100%"; el("pct").innerHTML = "100%"; el("file").innerHTML = ""; }
+  }
+</script>
+</body>
+</html>
